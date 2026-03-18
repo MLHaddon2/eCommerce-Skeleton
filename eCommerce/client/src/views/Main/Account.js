@@ -2,7 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Form, Button, Table } from 'react-bootstrap';
 import { useData } from '../../contexts/DataContext.js';
 
-// TODO: Implement cookies.
+// Cookie utility functions
+const getCookie = (name) => {
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+};
+
+const setCookie = (name, value, days = 30) => {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+};
 
 function Account() {
   const { customer, getCustomer, updateCustomer, orders, getOrders } = useData();
@@ -21,7 +30,7 @@ function Account() {
   const handleSubmit = async (e) => {
     try {
       e.preventDefault();
-      const id = localStorage.getItem('user_id');
+      const id = getCookie('user_id');
       await updateCustomer(id, user);
     } catch (error) {
       console.error(error);
@@ -32,9 +41,18 @@ function Account() {
     try {
       setIsLoading(true);
       setError(null);
-      const id = localStorage.getItem('user_id');
+      let id = getCookie('user_id');
+
+      // Fall back to localStorage if cookie not set, then persist to cookie
       if (!id) {
-        throw new Error('No user ID found in localStorage');
+        id = localStorage.getItem('user_id');
+        if (id) {
+          setCookie('user_id', id);
+        }
+      }
+
+      if (!id) {
+        throw new Error('No user ID found');
       }
 
       // Fetch customer data

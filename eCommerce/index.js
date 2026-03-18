@@ -6,6 +6,8 @@ import router from './routes/index.js';
 import axios from 'axios';
 import path from 'path';
 
+// TODO: Set Cookies here too as well.
+
 dotenv.config();
 const app = express();
 const port = process.env.PORT || 5001;
