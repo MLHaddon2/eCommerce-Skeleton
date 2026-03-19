@@ -1,17 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Form, Button, Table } from 'react-bootstrap';
 import { useData } from '../../contexts/DataContext.js';
+import { COOKIE_KEYS, getCookie, setCookie } from '../../Utils/cookieUtils.js';
 
-// Cookie utility functions
-const getCookie = (name) => {
-  const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + '=([^;]*)'));
-  return match ? decodeURIComponent(match[1]) : null;
-};
-
-const setCookie = (name, value, days = 30) => {
-  const expires = new Date(Date.now() + days * 864e5).toUTCString();
-  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
-};
+// TODO: Get rid of all the local storage
 
 function Account() {
   const { customer, getCustomer, updateCustomer, orders, getOrders } = useData();
@@ -30,7 +22,7 @@ function Account() {
   const handleSubmit = async (e) => {
     try {
       e.preventDefault();
-      const id = getCookie('user_id');
+      const id = getCookie(COOKIE_KEYS.USER_ID);
       await updateCustomer(id, user);
     } catch (error) {
       console.error(error);
@@ -41,13 +33,13 @@ function Account() {
     try {
       setIsLoading(true);
       setError(null);
-      let id = getCookie('user_id');
+      let id = getCookie(COOKIE_KEYS.USER_ID);
 
       // Fall back to localStorage if cookie not set, then persist to cookie
       if (!id) {
-        id = localStorage.getItem('user_id');
+        id = localStorage.getItem(COOKIE_KEYS.USER_ID);
         if (id) {
-          setCookie('user_id', id);
+          setCookie(COOKIE_KEYS.USER_ID, id);
         }
       }
 
@@ -63,22 +55,18 @@ function Account() {
 
       // Fetch all orders
       await getOrders();
-      
-      console.log("Customer: ", customerData);
-      console.log("Orders: ", orders);
 
       // Filter orders for this customer
       const customerOrders = orders.filter(order => order.customerId === parseInt(id));
-      console.log("Customer Orders: ", customerOrders);
 
       // Update user state with the customer's information
       setUser({
         firstName: customerData.firstName || "",
-        lastName: customerData.lastName || "",
-        email: customerData.email || "",
-        address: customerData.address || "",
+        lastName:  customerData.lastName  || "",
+        email:     customerData.email     || "",
+        address:   customerData.address   || "",
       });
-      
+
       setStateOrders(customerOrders);
     } catch (error) {
       console.error("Error fetching customer data:", error);
@@ -97,9 +85,9 @@ function Account() {
     if (customer) {
       setUser({
         firstName: customer.firstName || "",
-        lastName: customer.lastName || "",
-        email: customer.email || "",
-        address: customer.address || "",
+        lastName:  customer.lastName  || "",
+        email:     customer.email     || "",
+        address:   customer.address   || "",
       });
     }
   }, [customer]);
@@ -140,51 +128,51 @@ function Account() {
             <Form onSubmit={handleSubmit}>
               <Form.Group controlId="formFirstName" className="mb-3">
                 <Form.Label>First Name</Form.Label>
-                <Form.Control 
-                  type="text" 
-                  value={user.firstName} 
+                <Form.Control
+                  type="text"
+                  value={user.firstName}
                   onChange={(e) => setUser({...user, firstName: e.target.value})}
                   placeholder="Enter your first name"
                 />
               </Form.Group>
-              
+
               <Form.Group controlId="formLastName" className="mb-3">
                 <Form.Label>Last Name</Form.Label>
-                <Form.Control 
-                  type="text" 
-                  value={user.lastName} 
+                <Form.Control
+                  type="text"
+                  value={user.lastName}
                   onChange={(e) => setUser({...user, lastName: e.target.value})}
                   placeholder="Enter your last name"
                 />
               </Form.Group>
-              
+
               <Form.Group controlId="formEmail" className="mb-3">
                 <Form.Label>Email</Form.Label>
-                <Form.Control 
-                  type="email" 
-                  value={user.email} 
+                <Form.Control
+                  type="email"
+                  value={user.email}
                   onChange={(e) => setUser({...user, email: e.target.value})}
                   placeholder="Enter your email"
                 />
               </Form.Group>
-              
+
               <Form.Group controlId="formAddress" className="mb-3">
                 <Form.Label>Address</Form.Label>
-                <Form.Control 
-                  as="textarea" 
-                  rows={3} 
-                  value={user.address} 
+                <Form.Control
+                  as="textarea"
+                  rows={3}
+                  value={user.address}
                   onChange={(e) => setUser({...user, address: e.target.value})}
                   placeholder="Enter your address"
                 />
               </Form.Group>
-              
+
               <Button variant="primary" type="submit" className="mt-3">
                 Update Information
               </Button>
             </Form>
           </Col>
-          
+
           <Col md={6}>
             <h4>Order History</h4>
             {stateOrders.length === 0 ? (

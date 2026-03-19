@@ -1,97 +1,91 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useCart } from './CartContext';
 import axios from '../api/axios';
+import {
+  COOKIE_KEYS,
+  getCookie,
+  setCookie,
+  clearAuthCookies,
+} from '../Utils/cookieUtils';
 
+// TODO: Get rid of all the local storage
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState(null);
-  // const [isECommerce, setECommerce] = useState(false);
-  const { loadCartFromDatabase } = useCart();
-  const { cartItems } = useCart();
+  const { loadCartFromDatabase, cartItems } = useCart();
 
-  
   useEffect(() => {
     const checkAuthStatus = async () => {
-      const token = localStorage.getItem('access_token');
-      
+      const token = getCookie(COOKIE_KEYS.ACCESS_TOKEN);
+
       if (token) {
         try {
           const response = await axios.get('/api/verify-token', {
             headers: { Authorization: `Bearer ${token}` }
           });
-          console.log("response: ", response);
+
           if (response.config.headers.Authorization) {
             setIsAuthenticated(true);
-            setUsername(localStorage.getItem('username'));
+            setUsername(getCookie(COOKIE_KEYS.USERNAME));
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           } else {
-          // Clear Auth Data
-          clearAuthData();
+            handleClearAuthData();
           }
         } catch (error) {
           console.error('Error verifying token:', error);
-          // Clear Auth Data
-          clearAuthData();
+          handleClearAuthData();
         }
       }
     };
-    
+
     checkAuthStatus();
-    }, []);
-  
-  const clearAuthData = () => {
-    console.log('Authorization cleared!!!')
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user_id');
-    localStorage.removeItem('username');
+  }, []);
+
+  const handleClearAuthData = () => {
+    clearAuthCookies();
     setIsAuthenticated(false);
     setUsername(null);
     delete axios.defaults.headers.common['Authorization'];
   };
-  
+
   const login = async (credentials) => {
     try {
-      // Set user data
+      const { token, user } = credentials;
+
+      // Persist auth data to cookies
+      setCookie(COOKIE_KEYS.ACCESS_TOKEN, token);
+      setCookie(COOKIE_KEYS.USERNAME, user.username);
+      setCookie(COOKIE_KEYS.USER_ID, String(user.id));
+
+      // Update app state
       setIsAuthenticated(true);
-      setUsername(credentials.user.username);
-      localStorage.setItem('access_token', credentials.token);
-      localStorage.setItem('username', credentials.user.username);
-      localStorage.setItem('user_id', credentials.user.id);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${credentials.token}`;
-      
+      setUsername(user.username);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
       // Load user's cart from database
-      await loadCartFromDatabase(credentials.user.id);
-      
+      await loadCartFromDatabase(user.id);
     } catch (error) {
       console.error('Login failed:', error);
     }
   };
-
 
   const logout = async () => {
     try {
       // Save current cart to IP history before logging out
       const ipResponse = await axios.get('proxy');
       const ipAddress = ipResponse.data.ip;
-      
+
       await axios.post(`api/cart/update/0000/${ipAddress}`, {
         cartItems: cartItems
       });
-      
-      // Clear user data
-      setIsAuthenticated(false);
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('user_id');
-      localStorage.removeItem('username');
-      delete axios.defaults.headers.common['Authorization'];
-      
     } catch (error) {
       console.error('Logout error:', error);
+    } finally {
+      // Always clear auth data even if the cart save fails
+      handleClearAuthData();
     }
   };
 

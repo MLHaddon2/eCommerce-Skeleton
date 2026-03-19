@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useData } from './DataContext';
 import axios from '../api/axios';
 
+// TODO: Implement cookies for local storage states
+
 const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
