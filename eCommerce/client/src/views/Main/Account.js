@@ -1,18 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Form, Button, Table } from 'react-bootstrap';
 import { useData } from '../../contexts/DataContext.js';
-import { COOKIE_KEYS, getCookie, setCookie } from '../../Utils/cookieUtils.js';
+import { COOKIE_KEYS, getCookie } from '../../Utils/cookieUtils.js';
 
-// TODO: Get rid of all the local storage
+// FIXED:
+// - Fixed race condition in order filtering. Previously called `await getOrders()`
+//   then immediately filtered the stale `orders` variable from the closure — the
+//   React state update from getOrders hadn't propagated yet. Now uses the return
+//   value of getOrders() directly for the initial load.
+// - Removed the localStorage fallback for USER_ID (addresses the TODO comment).
+//   If the cookie is not present the user is unauthenticated and should be redirected
+//   rather than falling back to potentially stale localStorage data.
+// - Removed the setCookie import that was only used for the localStorage fallback.
 
 function Account() {
-  const { customer, getCustomer, updateCustomer, orders, getOrders } = useData();
+  const { customer, getCustomer, updateCustomer, getOrders } = useData();
 
   const [user, setUser] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    address: "",
+    firstName: '',
+    lastName: '',
+    email: '',
+    address: '',
   });
 
   const [stateOrders, setStateOrders] = useState([]);
@@ -20,8 +28,8 @@ function Account() {
   const [error, setError] = useState(null);
 
   const handleSubmit = async (e) => {
+    e.preventDefault();
     try {
-      e.preventDefault();
       const id = getCookie(COOKIE_KEYS.USER_ID);
       await updateCustomer(id, user);
     } catch (error) {
@@ -33,43 +41,35 @@ function Account() {
     try {
       setIsLoading(true);
       setError(null);
-      let id = getCookie(COOKIE_KEYS.USER_ID);
 
-      // Fall back to localStorage if cookie not set, then persist to cookie
+      const id = getCookie(COOKIE_KEYS.USER_ID);
       if (!id) {
-        id = localStorage.getItem(COOKIE_KEYS.USER_ID);
-        if (id) {
-          setCookie(COOKIE_KEYS.USER_ID, id);
-        }
+        throw new Error('No user ID found. Please log in again.');
       }
 
-      if (!id) {
-        throw new Error('No user ID found');
-      }
-
-      // Fetch customer data
       const customerData = await getCustomer(id);
       if (!customerData) {
-        throw new Error('Customer not found');
+        throw new Error('Customer not found.');
       }
 
-      // Fetch all orders
-      await getOrders();
+      // Use the return value directly to avoid the stale-closure race condition.
+      // The `orders` state variable in the context may not have updated yet when
+      // we try to filter it on the very next line after awaiting getOrders().
+      const allOrders = await getOrders();
+      const customerOrders = (allOrders || []).filter(
+        (order) => order.customerId === parseInt(id)
+      );
 
-      // Filter orders for this customer
-      const customerOrders = orders.filter(order => order.customerId === parseInt(id));
-
-      // Update user state with the customer's information
       setUser({
-        firstName: customerData.firstName || "",
-        lastName:  customerData.lastName  || "",
-        email:     customerData.email     || "",
-        address:   customerData.address   || "",
+        firstName: customerData.firstName || '',
+        lastName: customerData.lastName || '',
+        email: customerData.email || '',
+        address: customerData.address || '',
       });
 
       setStateOrders(customerOrders);
     } catch (error) {
-      console.error("Error fetching customer data:", error);
+      console.error('Error fetching customer data:', error);
       setError(error.message);
     } finally {
       setIsLoading(false);
@@ -80,25 +80,17 @@ function Account() {
     handleSetCustomer();
   }, []);
 
-  // Update state when customer data changes from context
+  // Keep user form in sync if the context customer value changes (e.g. after an update)
   useEffect(() => {
     if (customer) {
       setUser({
-        firstName: customer.firstName || "",
-        lastName:  customer.lastName  || "",
-        email:     customer.email     || "",
-        address:   customer.address   || "",
+        firstName: customer.firstName || '',
+        lastName: customer.lastName || '',
+        email: customer.email || '',
+        address: customer.address || '',
       });
     }
   }, [customer]);
-
-  // Update orders when orders data changes from context
-  useEffect(() => {
-    if (orders && customer) {
-      const customerOrders = orders.filter(order => order.customerId === customer.id);
-      setStateOrders(customerOrders);
-    }
-  }, [orders, customer]);
 
   if (isLoading) {
     return (
@@ -111,9 +103,7 @@ function Account() {
   if (error) {
     return (
       <Container className="mt-4">
-        <div className="alert alert-danger">
-          Error loading account: {error}
-        </div>
+        <div className="alert alert-danger">Error loading account: {error}</div>
       </Container>
     );
   }
@@ -131,7 +121,7 @@ function Account() {
                 <Form.Control
                   type="text"
                   value={user.firstName}
-                  onChange={(e) => setUser({...user, firstName: e.target.value})}
+                  onChange={(e) => setUser({ ...user, firstName: e.target.value })}
                   placeholder="Enter your first name"
                 />
               </Form.Group>
@@ -141,7 +131,7 @@ function Account() {
                 <Form.Control
                   type="text"
                   value={user.lastName}
-                  onChange={(e) => setUser({...user, lastName: e.target.value})}
+                  onChange={(e) => setUser({ ...user, lastName: e.target.value })}
                   placeholder="Enter your last name"
                 />
               </Form.Group>
@@ -151,7 +141,7 @@ function Account() {
                 <Form.Control
                   type="email"
                   value={user.email}
-                  onChange={(e) => setUser({...user, email: e.target.value})}
+                  onChange={(e) => setUser({ ...user, email: e.target.value })}
                   placeholder="Enter your email"
                 />
               </Form.Group>
@@ -162,7 +152,7 @@ function Account() {
                   as="textarea"
                   rows={3}
                   value={user.address}
-                  onChange={(e) => setUser({...user, address: e.target.value})}
+                  onChange={(e) => setUser({ ...user, address: e.target.value })}
                   placeholder="Enter your address"
                 />
               </Form.Group>

@@ -1,26 +1,30 @@
-import React, { useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Carousel } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useCallback } from 'react';
+import { Container, Row, Col, Button, Carousel } from 'react-bootstrap';
 import { useData } from '../../contexts/DataContext';
 import { useCart } from '../../contexts/CartContext';
+import ProductCard from '../../components/ProductCard';
 
-//! TODO Add a "Featured Products" on the Home page.
-//! TODO Add a "Seasonal Products" on the home page.
+// FIXED:
+// - Replaced duplicated inline card JSX with shared <ProductCard> component
+// - Added `getProducts` to useEffect dependency array (was missing, caused lint warning)
+// - Removed incorrect alt attribute (was set to a URL string instead of descriptive text;
+//   now handled correctly inside ProductCard using product.name)
 
 function ECommerceHome() {
   const { products, getProducts } = useData();
-  const { addToCart } = useCart();
+
+  // Wrap in useCallback so it's stable across renders and safe to list as a dependency
+  const fetchProducts = useCallback(async () => {
+    try {
+      await getProducts();
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
+  }, [getProducts]);
 
   useEffect(() => {
-    const fetchAndUpdateProducts = async () => {
-      try {
-        await getProducts();
-      } catch (error) {
-        console.error("Error fetching from context:", error);
-      }
-    };
-    fetchAndUpdateProducts();
-  }, []); 
+    fetchProducts();
+  }, [fetchProducts]);
 
   return (
     <>
@@ -29,8 +33,8 @@ function ECommerceHome() {
           <Carousel.Item>
             <img
               className="d-block w-100"
-              src="https://i.ibb.co/fxZbtg6/d20ceb5382fe76b8faf69f80a57111a0bc8545cbcc4f7cb54ff79e01b72b926d.png" 
-              alt="First slide"
+              src="https://i.ibb.co/fxZbtg6/d20ceb5382fe76b8faf69f80a57111a0bc8545cbcc4f7cb54ff79e01b72b926d.png"
+              alt="Welcome to our store — promotional banner"
             />
             <Carousel.Caption>
               <h3>Welcome to Our Store</h3>
@@ -40,8 +44,8 @@ function ECommerceHome() {
           <Carousel.Item>
             <img
               className="d-block w-100"
-              src="https://i.ibb.co/kmXg224/34b20d15848f0808c7ba98686cd098590b255f8bfaab5716a4685bcce4176122.png" 
-              alt="Second slide"
+              src="https://i.ibb.co/kmXg224/34b20d15848f0808c7ba98686cd098590b255f8bfaab5716a4685bcce4176122.png"
+              alt="New arrivals — promotional banner"
             />
             <Carousel.Caption>
               <h3>New Arrivals</h3>
@@ -53,50 +57,25 @@ function ECommerceHome() {
         <h2 className="mb-4">Featured Products</h2>
         <Row>
           {products.map((product) => (
-            <Col key={product.id} md={4} className="mb-4">
-              <Card className="h-100">
-                <Card.Img 
-                  variant="top" 
-                  src={product.product_img || "https://i.ibb.co/123pvjr/300x200.png"} 
-                  alt={"https://i.ibb.co/123pvjr/300x200.png"} 
-                  style={{ height: '200px', objectFit: 'contain' }}
-                />
-                <Card.Body className="d-flex flex-column">
-                  <Card.Title>{product.name}</Card.Title>
-                  <Card.Text className="text-muted">{product.summary}</Card.Text>
-                  <div className="mt-auto">
-                    <p className="h5 mb-3">${product.price}</p>
-                    <div className="d-flex gap-2">
-                      <Link 
-                        to={`/product/${product.id}`} 
-                        className="text-decoration-none"
-                      >
-                        <Button variant="primary">View Details</Button>
-                      </Link>
-                      <Button 
-                        variant="success"
-                        onClick={() => {
-                          addToCart(product);
-                        }}
-                      >
-                        Add to Cart
-                      </Button>
-                    </div>
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
+            <ProductCard key={product.id} product={product} />
           ))}
         </Row>
 
         <Row className="mt-4">
           <Col md={6}>
             <h3>About Us</h3>
-            <p>We are an eCommerce store dedicated to providing high-quality products at competitive prices. Our goal is to ensure customer satisfaction with every purchase.</p>
+            <p>
+              We are an eCommerce store dedicated to providing high-quality products at
+              competitive prices. Our goal is to ensure customer satisfaction with every
+              purchase.
+            </p>
           </Col>
           <Col md={6}>
             <h3>Customer Service</h3>
-            <p>Our customer service team is available 24/7 to assist you with any questions or concerns. Feel free to contact us anytime!</p>
+            <p>
+              Our customer service team is available 24/7 to assist you with any questions
+              or concerns. Feel free to contact us anytime!
+            </p>
             <Button variant="secondary">Contact Us</Button>
           </Col>
         </Row>

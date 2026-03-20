@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import router from './routes/index.js';
 import axios from 'axios';
 import path from 'path';
+import crypto from "crypto";
 
 dotenv.config();
 const app = express();

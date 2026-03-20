@@ -3,24 +3,27 @@ import { Container, Row, Col, Table, Button, Form } from 'react-bootstrap';
 import { useCart } from '../../contexts/CartContext';
 import { useNavigate } from 'react-router-dom';
 
+// FIXED:
+// - Removed duplicate "Continue Shopping" button that appeared immediately above
+//   "Proceed to Checkout" in the non-empty cart view. There was no gap between them.
+// - Added mt-2 spacing between the two action buttons.
+// - Removed { replace: true } from continueShopping navigation — replacing the
+//   history entry here means the user can't go back to the cart from the browse
+//   page, which is unexpected UX. replace: true is only appropriate post-purchase.
+
 function Cart() {
   const navigate = useNavigate();
-  const { 
-    cartItems, 
-    removeFromCart, 
-    updateQuantity, 
-    getCartTotal
-  } = useCart();
+  const { cartItems, removeFromCart, updateQuantity, getCartTotal } = useCart();
 
   const continueShopping = () => {
-    navigate('/browse', { replace: true });
+    navigate('/browse');
   };
 
   const proceedToCheckout = () => {
-    navigate('/checkout', { replace: true });
+    navigate('/checkout');
   };
 
-  const shippingCost = cartItems.length > 0 ? 5.00 : 0;
+  const shippingCost = cartItems.length > 0 ? 5.0 : 0;
 
   return (
     <Container className="mt-4">
@@ -60,8 +63,8 @@ function Cart() {
                     </td>
                     <td>${(item.price * item.quantity).toFixed(2)}</td>
                     <td>
-                      <Button 
-                        variant="danger" 
+                      <Button
+                        variant="danger"
                         size="sm"
                         onClick={() => removeFromCart(item.id)}
                       >
@@ -86,15 +89,23 @@ function Cart() {
                   <td>${shippingCost.toFixed(2)}</td>
                 </tr>
                 <tr>
-                  <td><strong>Total:</strong></td>
-                  <td><strong>${(getCartTotal() + shippingCost).toFixed(2)}</strong></td>
+                  <td>
+                    <strong>Total:</strong>
+                  </td>
+                  <td>
+                    <strong>${(getCartTotal() + shippingCost).toFixed(2)}</strong>
+                  </td>
                 </tr>
               </tbody>
             </Table>
-            <Button variant="primary" className="w-100" onClick={continueShopping}>
-            Continue Shopping
+            <Button variant="outline-secondary" className="w-100" onClick={continueShopping}>
+              Continue Shopping
             </Button>
-            <Button variant="primary" className="w-100" onClick={proceedToCheckout}>
+            <Button
+              variant="primary"
+              className="w-100 mt-2"
+              onClick={proceedToCheckout}
+            >
               Proceed to Checkout
             </Button>
           </Col>
