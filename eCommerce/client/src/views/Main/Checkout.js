@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from '../../api/axios'; // FIXED: was importing from 'axios' directly, bypassing interceptors
 import SquarePaymentForm from '../../components/SquarePaymentForm.js';
 import CreditCardForm from '../../components/CreditCardForm.js';
+import { useSavedCards } from '../../contexts/SavedCardsContext.js';
 
 // FIXED — CRITICAL (security):
 // 1. Raw card data (cardNumber, expiryDate, cvv) is NO LONGER sent to the backend.
@@ -67,21 +68,23 @@ function Checkout() {
   const [success, setSuccess] = useState(false);
 
   const [shippingState, setShippingState] = useState('');
-  const [savedCards, setSavedCards] = useState([]);
   const [selectedSavedCard, setSelectedSavedCard] = useState('');
   const [useNewCard, setUseNewCard] = useState(true);
 
+  const { savedCards, defaultCard, fetchSavedCards, addSavedCard } = useSavedCards();
+
+  // Load saved cards when checkout mounts (context deduplicates calls)
   useEffect(() => {
-    const fetchSavedCards = async () => {
-      try {
-        const response = await axios.get('/api/user/saved-cards');
-        setSavedCards(response.data.cards || []);
-      } catch (err) {
-        console.error('Error fetching saved cards:', err);
-      }
-    };
     fetchSavedCards();
-  }, []);
+  }, [fetchSavedCards]);
+
+  // Pre-select the customer's default card once cards are loaded
+  useEffect(() => {
+    if (defaultCard && !selectedSavedCard) {
+      setSelectedSavedCard(defaultCard.id);
+      setUseNewCard(false);
+    }
+  }, [defaultCard]);
 
   const calculateSalesTax = () => {
     const subtotal = getCartTotal();
@@ -144,6 +147,13 @@ function Checkout() {
       const response = await axios.post(API_ENDPOINTS.creditCard, paymentData);
 
       if (response.data.success) {
+        // If the user ticked "save card" and the server vaulted it, persist
+        // the card reference via the context so the UI updates immediately.
+        // The server returns { vaultedCard: { processorCardId, brand, last4,
+        //   expMonth, expYear } } when saveCard was true.
+        if (useNewCard && saveCard && response.data.vaultedCard) {
+          await addSavedCard(response.data.vaultedCard);
+        }
         setSuccess(true);
       } else {
         setError(response.data.message || 'Payment failed. Please try again.');

@@ -9,8 +9,7 @@ import { getIpHistory, getIpHistories, createIpHistory, updateIpHistory, deleteI
 import { initializeSquareClient, getPayment, updatePayment, cancelPayment, completePayment, createPayment, refundPayment, listPayments } from '../middleware/SquareAPI.js';
 import { refreshToken } from '../Controllers/RefreshToken.js';
 import { verifyToken } from '../middleware/VerifyToken.js';
-
-// TODO: Add saved-cards functionality
+import { getSavedCards, addSavedCard, deleteSavedCard, setDefaultCard } from '../Controllers/SavedCards.js';
 
 const router = express.Router();
 
@@ -38,7 +37,6 @@ router.delete('/products/delete/:id', deleteProduct);
 
 // Product Reviews (these routes need to be added to your Products controller)
 router.post('/products/:id/reviews', async (req, res) => {
-  // This would need to be implemented in Products.js
   res.status(501).json({ message: "Review endpoints not yet implemented" });
 });
 router.put('/products/:id/reviews/:reviewId', async (req, res) => {
@@ -52,27 +50,27 @@ router.delete('/products/:id/reviews/:reviewId', async (req, res) => {
 router.get('/customers/get', getCustomers);
 router.get('/customers/get/:id', getCustomer);
 router.post('/customers/create', createCustomer);
-router.put('/customers/update/:id', updateCustomer); // Fixed: added :id parameter
-router.delete('/customers/delete/:id', deleteCustomer); // Added missing delete route
+router.put('/customers/update/:id', updateCustomer);
+router.delete('/customers/delete/:id', deleteCustomer);
 
 // Transactions
 router.get('/transactions/get', getTransactions);
 router.get('/transactions/get/:id', getTransaction);
 router.post('/transactions/create', createTransaction);
-router.put('/transactions/update/:id', updateTransaction); // Fixed: added :id parameter
-router.delete('/transactions/delete/:id', deleteTransaction); // Added missing delete route
+router.put('/transactions/update/:id', updateTransaction);
+router.delete('/transactions/delete/:id', deleteTransaction);
 
 // Orders
 router.get('/orders/get', getOrders);
 router.get('/orders/get/:id', getOrder);
 router.post('/orders/create', createOrder);
-router.put('/orders/update/:id', updateOrder); // Fixed: added :id parameter
+router.put('/orders/update/:id', updateOrder);
 router.delete('/orders/delete/:id', deleteOrder);
 
 // Cart Management
 router.get('/cart/get/:id/:ipAddress', getCartItems);
-router.post('/cart/update/:id/:ipAddress', updateCartItems); // Fixed: added required parameters
-router.delete('/cart/delete/:id/:productId/:ipAddress', deleteCartItem); // Fixed: added required parameters
+router.post('/cart/update/:id/:ipAddress', updateCartItems);
+router.delete('/cart/delete/:id/:productId/:ipAddress', deleteCartItem);
 
 // IP History Management
 router.get('/ip-history', getIpHistories);
@@ -80,6 +78,12 @@ router.get('/ip-history/:ipAddress', getIpHistory);
 router.post('/ip-history/create', createIpHistory);
 router.put('/ip-history/update/:ipAddress', updateIpHistory);
 router.delete('/ip-history/delete/:ipAddress', deleteIpHistory);
+
+// Saved Cards — all routes require a valid session via verifyToken
+router.get('/user/saved-cards', verifyToken, getSavedCards);
+router.post('/user/saved-cards', verifyToken, addSavedCard);
+router.delete('/user/saved-cards/:cardId', verifyToken, deleteSavedCard);
+router.patch('/user/saved-cards/:cardId/default', verifyToken, setDefaultCard);
 
 // Square Payment API Routes
 router.post('/payments', createPayment);

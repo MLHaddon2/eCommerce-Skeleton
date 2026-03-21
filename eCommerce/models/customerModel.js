@@ -27,6 +27,10 @@ const Customers = db.define('customers', {
   ipHistory: {
     type: DataTypes.JSON
   },
+  savedCards: { 
+    type: DataTypes.JSON, 
+    defaultValue: [] 
+  },
   totalOrders: {
     type: DataTypes.INTEGER
   },

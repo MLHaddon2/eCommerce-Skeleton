@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+                                                                                                                                                                                                                           import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useCart } from './CartContext';
 import axios from '../api/axios';
 import {
@@ -6,6 +6,7 @@ import {
   setCookie,
   clearAuthCookies,
 } from '../Utils/cookieUtils';
+import { useSavedCards } from './SavedCardsContext';
 
 // FIXED — cookie strategy overhaul:
 //
@@ -36,6 +37,7 @@ export const AuthProvider = ({ children }) => {
   const [username, setUsername] = useState(null);
   const [userId, setUserId] = useState(null);
   const { loadCartFromDatabase, cartItems } = useCart();
+  const { fetchSavedCards, clearSavedCards } = useSavedCards();
 
   // On mount, check if the user is still authenticated by hitting verify-token.
   // The browser sends the httpOnly access_token cookie automatically — we never
@@ -53,6 +55,7 @@ export const AuthProvider = ({ children }) => {
           setCookie(COOKIE_KEYS.USERNAME, user.username);
           setCookie(COOKIE_KEYS.USER_ID, String(user.id));
           await loadCartFromDatabase(user.id);
+          await fetchSavedCards();
         }
       } catch (error) {
         if (error.response?.status !== 401) {
@@ -71,6 +74,7 @@ export const AuthProvider = ({ children }) => {
     setUsername(null);
     setUserId(null);
     delete axios.defaults.headers.common['Authorization'];
+    clearSavedCards();
   };
 
   const login = async (credentials) => {
@@ -86,6 +90,7 @@ export const AuthProvider = ({ children }) => {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
       await loadCartFromDatabase(user.id);
+      await fetchSavedCards();
     } catch (error) {
       console.error('Login failed:', error);
     }
