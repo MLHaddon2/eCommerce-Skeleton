@@ -1,19 +1,33 @@
 // ── cookieUtils.js ────────────────────────────────────────────────────────────
 // Single source of truth for cookie names and helpers shared across the client.
-// Keep COOKIE_KEYS in sync with the server-side COOKIE_KEYS in index.js.
-
-// TODO: Get rid of all the local storage
+//
+// FIXED — auth cookie strategy:
+// The server sets httpOnly: true cookies (access_token, session, user_id).
+// httpOnly cookies are INVISIBLE to document.cookie by design — they are sent
+// automatically by the browser on every request but JS cannot read them.
+// Trying to read them with getCookie() always returns null/undefined.
+//
+// Strategy going forward:
+//   - httpOnly cookies (set by server): access_token, sessionId, user_id
+//     → Never read these in JS. The browser handles them automatically.
+//     → Auth state is determined by calling /api/verify-token on load,
+//       not by reading the token directly.
+//   - JS-readable cookies (set by client): username only — just for display.
+//     → Nothing sensitive. Losing this cookie only means the welcome
+//       message disappears until next login, which is fine.
 
 export const COOKIE_KEYS = {
-    SESSION_ID:    'sessionId',
-    USER_ID:       'user_id',
-    USERNAME:      'username',
-    ACCESS_TOKEN:  'access_token',
-    REFRESH_TOKEN: 'refresh_token',
+    SESSION_ID:    'sessionId',     // httpOnly — set by server, do not read in JS
+    USER_ID:       'user_id',       // JS-readable — written by client after login
+    ACCESS_TOKEN:  'access_token',  // httpOnly — set by server, do not read in JS
+    REFRESH_TOKEN: 'refresh_token', // httpOnly — set by server, do not read in JS
+    USERNAME:      'username',      // JS-readable — safe to store, not sensitive
 };
 
 /**
- * Read a cookie by name.
+ * Read a JS-readable cookie by name.
+ * NOTE: This will always return null for httpOnly cookies (access_token,
+ * user_id, sessionId) — that is expected and correct behaviour.
  * @param {string} name
  * @returns {string|null}
  */
@@ -25,10 +39,10 @@ export const getCookie = (name) => {
 };
 
 /**
- * Write a cookie.
+ * Write a JS-readable cookie. Only use for non-sensitive display data.
  * @param {string} name
  * @param {string} value
- * @param {number} days  - defaults to 7 to match server maxAge
+ * @param {number} days — defaults to 7
  */
 export const setCookie = (name, value, days = 7) => {
     const expires = new Date(Date.now() + days * 864e5).toUTCString();
@@ -44,11 +58,11 @@ export const deleteCookie = (name) => {
 };
 
 /**
- * Delete all auth-related cookies in one call.
+ * Clear the only JS-readable auth cookie (username).
+ * The httpOnly cookies (token, user_id, sessionId) are cleared by the server
+ * when it receives the logout request — the client cannot clear them directly.
  */
 export const clearAuthCookies = () => {
-    deleteCookie(COOKIE_KEYS.ACCESS_TOKEN);
-    deleteCookie(COOKIE_KEYS.REFRESH_TOKEN);
-    deleteCookie(COOKIE_KEYS.USER_ID);
     deleteCookie(COOKIE_KEYS.USERNAME);
+    deleteCookie(COOKIE_KEYS.USER_ID);
 };

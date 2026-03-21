@@ -49,17 +49,28 @@ export const createCustomer = async (req, res) => {
 };
 
 export const updateCustomer = async (req, res) => {
-  console.log(req.body);
   try {
-    const customer = await Customers.findOne({
-      where: { id: req.body.id },
-      attributes: req.body
-    });
+    const id = req.params.id;
+    const customer = await Customers.findOne({ where: { id } });
     if (!customer) return res.status(404).json({ message: "Customer not found" });
-    const data = req.body;
-    const updatedCustomer = await Customers.update(data, {
-      where: { id: req.body.id }
-    });
+
+    const { firstName, lastName, email, address, cartItems, lastLogin, ipHistory, totalOrders, totalSpent, recordLogin } = req.body;
+
+    const updateData = {};
+    if (firstName   !== undefined) updateData.firstName   = firstName;
+    if (lastName    !== undefined) updateData.lastName    = lastName;
+    if (email       !== undefined) updateData.email       = email;
+    if (address     !== undefined) updateData.address     = address;
+    if (cartItems   !== undefined) updateData.cartItems   = cartItems;
+    if (totalOrders !== undefined) updateData.totalOrders = totalOrders;
+    if (totalSpent  !== undefined) updateData.totalSpent  = totalSpent;
+
+    // If the client signals a login event, update lastLogin server-side
+    if (recordLogin || lastLogin) {
+      updateData.lastLogin = new Date().toUTCString();
+    }
+
+    const updatedCustomer = await Customers.update(updateData, { where: { id } });
     res.status(200).json({ message: "Customer updated successfully", updatedCustomer });
   } catch (error) {
     console.error('Error in Customer update: ', error);

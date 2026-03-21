@@ -103,14 +103,20 @@ export const Login = async (req, res) => {
       where: { id: user.id }
     });
 
-    res.cookie('refreshToken', refreshToken, {
+    const cookieConfig = {
       httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
-    });
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    };
 
-    res.status(200).json({message:"Login Successful", accessToken, userRes: user });
+    // Set both tokens as httpOnly cookies so the client never handles raw tokens
+    res.cookie('refreshToken', refreshToken, { ...cookieConfig, maxAge: 7 * 24 * 60 * 60 * 1000 });
+    res.cookie('access_token', accessToken, { ...cookieConfig, maxAge: 15 * 60 * 1000 });
+
+    // Return the access token in the body too so AuthContext can set the
+    // Authorization header for the remainder of this session without a page reload
+    const userRes = { id: user.id, username: user.username, email: user.email };
+    res.status(200).json({ message: "Login Successful", accessToken, userRes });
   } catch (error) {
     console.error('Error in Login:', error);
     res.status(500).json({ message: "Internal server error" });
@@ -120,22 +126,17 @@ export const Login = async (req, res) => {
 export const Logout = async (req, res) => {
   try {
     const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) return res.sendStatus(204);
 
-    const user = await Users.findOne({
-      where: { refresh_token: refreshToken }
-    });
-
-    if (!user) {
-      res.clearCookie('refreshToken');
-      return res.sendStatus(204);
+    if (refreshToken) {
+      const user = await Users.findOne({ where: { refresh_token: refreshToken } });
+      if (user) {
+        await Users.update({ refresh_token: null }, { where: { id: user.id } });
+      }
     }
 
-    await Users.update({ refresh_token: null }, {
-      where: { id: user.id }
-    });
-    
+    // Clear both auth cookies — only the server can clear httpOnly cookies
     res.clearCookie('refreshToken');
+    res.clearCookie('access_token');
     res.sendStatus(200);
   } catch (error) {
     console.error('Error in Logout:', error);

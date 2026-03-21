@@ -81,17 +81,25 @@ export const CartProvider = ({ children }) => {
       }
   };
 
-  const loadCartFromDatabase = async () => {
+  const loadCartFromDatabase = async (userId) => {
     try {
-        const ipResponse = await axios.get('proxy');
-        const ipAddress = ipResponse.data.ip;
-        
-        const res = await getIpHistory(ipAddress);
-        console.log({message: "LoadFromCart Response: ", res});
-        if (res && res.cartItems) {
-          setCartItems(res.cartItems);
-        };
-        syncCartWithDatabase(cartItems);
+        if (userId) {
+          // Logged-in user — load cart from their customer record
+          const res = await axios.get(`/api/cart/get/${userId}/none`);
+          console.log({ message: 'LoadFromCart (user) Response: ', res });
+          if (res?.data?.customer?.cartItems) {
+            setCartItems(res.data.customer.cartItems);
+          }
+        } else {
+          // Guest — load cart from IP history
+          const ipResponse = await axios.get('proxy');
+          const ipAddress = ipResponse.data.ip;
+          const res = await getIpHistory(ipAddress);
+          console.log({ message: 'LoadFromCart (guest) Response: ', res });
+          if (res && res.cartItems) {
+            setCartItems(res.cartItems);
+          }
+        }
     } catch (error) {
         console.error('Error loading cart from database:', error);
     }

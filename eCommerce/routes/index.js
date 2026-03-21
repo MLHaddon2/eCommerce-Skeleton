@@ -20,8 +20,13 @@ router.get('/user', verifyToken, getUser);
 router.post('/register', Register);
 router.post('/login', Login);
 router.post('/logout', Logout);
+router.post('/cart/save-on-logout', updateCartItems);
 router.get('/token', refreshToken);
-router.get('/verify-token', verifyToken, (req, res) => res.sendStatus(200));
+router.get('/verify-token', verifyToken, (req, res) => {
+  res.status(200).json({
+    user: { id: req.userID, username: req.username, email: req.email }
+  });
+});
 
 // eCommerce Routes
 // Products
