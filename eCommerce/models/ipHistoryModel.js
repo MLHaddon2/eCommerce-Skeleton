@@ -11,7 +11,7 @@ const IpHistories = db.define('iphistories', {
     },
     lastLogin: {
         type: DataTypes.DATE,
-        allowNull: false
+        allowNull: true
     },
     cartItems: {
         type: DataTypes.JSON, // or TEXT if you're storing as JSON string

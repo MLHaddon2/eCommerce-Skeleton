@@ -2,7 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useData } from './DataContext';
 import axios from '../api/axios';
 
-// TODO: Implement cookies for local storage states
+// TODO: Errors with ipHistory API and ipHistory/create API. 
+// Include the routes and controllers for the fix.
 
 const CartContext = createContext();
 
@@ -85,7 +86,8 @@ export const CartProvider = ({ children }) => {
     try {
         if (userId) {
           // Logged-in user — load cart from their customer record
-          const res = await axios.get(`/api/cart/get/${userId}/none`);
+          const ipResponse = await axios.get('proxy');
+          const res = await axios.get(`/api/cart/get/${userId}/${ipResponse.data.ip}`);
           console.log({ message: 'LoadFromCart (user) Response: ', res });
           if (res?.data?.customer?.cartItems) {
             setCartItems(res.data.customer.cartItems);
@@ -94,8 +96,14 @@ export const CartProvider = ({ children }) => {
           // Guest — load cart from IP history
           const ipResponse = await axios.get('proxy');
           const ipAddress = ipResponse.data.ip;
-          const res = await getIpHistory(ipAddress);
+          let ipHistory = await getIpHistory(ipAddress);
+
+          // Create IpHistory if not exists
+          if (!ipHistory) { 
+            ipHistory = await createIpHistory({ipAddress, cartItems}) 
+          };
           console.log({ message: 'LoadFromCart (guest) Response: ', res });
+          const res = await getIpHistory(ipHistory);
           if (res && res.cartItems) {
             setCartItems(res.cartItems);
           }
@@ -141,6 +149,7 @@ export const CartProvider = ({ children }) => {
       getCartCount,
       getCartProductIds,
       loadCartFromDatabase,
+      syncCartWithDatabase,
       isLoading,
       error
     }}>

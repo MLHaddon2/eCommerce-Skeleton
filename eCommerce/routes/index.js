@@ -68,6 +68,7 @@ router.put('/orders/update/:id', updateOrder);
 router.delete('/orders/delete/:id', deleteOrder);
 
 // Cart Management
+router.get('/cart/get/:ipAddress', getCartItems);
 router.get('/cart/get/:id/:ipAddress', getCartItems);
 router.post('/cart/update/:id/:ipAddress', updateCartItems);
 router.delete('/cart/delete/:id/:productId/:ipAddress', deleteCartItem);
