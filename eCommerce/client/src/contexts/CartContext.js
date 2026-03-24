@@ -64,7 +64,7 @@ export const CartProvider = ({ children }) => {
         console.error('Error syncing cart with database:', error);
       }
   };
-
+ 
   const removeFromCart = async (productId) => {
       const newCartItems = cartItems.filter(item => item.id !== productId);
       setCartItems(newCartItems);
