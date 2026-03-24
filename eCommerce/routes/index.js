@@ -75,8 +75,8 @@ router.delete('/cart/delete/:id/:productId/:ipAddress', deleteCartItem);
 
 // IP History Management
 router.get('/ip-history', getIpHistories);
-router.get('/ip-history/:ipAddress', getIpHistory);
 router.post('/ip-history/create', createIpHistory);
+router.get('/ip-history/:ipAddress', getIpHistory);
 router.put('/ip-history/update/:ipAddress', updateIpHistory);
 router.delete('/ip-history/delete/:ipAddress', deleteIpHistory);
 

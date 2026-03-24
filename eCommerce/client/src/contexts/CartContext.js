@@ -2,8 +2,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useData } from './DataContext';
 import axios from '../api/axios';
 
-// TODO: Errors with ipHistory API and ipHistory/create API. 
-// Include the routes and controllers for the fix.
 
 const CartContext = createContext();
 
@@ -72,11 +70,10 @@ export const CartProvider = ({ children }) => {
       setCartItems(newCartItems);
       
       try {
-          // const userId = localStorage.getItem('user_id') || '0000';
           const ipResponse = await axios.get('proxy');
           const ipAddress = ipResponse.data.ip;
           
-          await deleteIpHistory(productId, ipAddress);
+          await deleteIpHistory(ipAddress);
       } catch (error) {
           console.error('Error removing product from cart:', error);
       }
@@ -100,10 +97,10 @@ export const CartProvider = ({ children }) => {
 
           // Create IpHistory if not exists
           if (!ipHistory) { 
-            ipHistory = await createIpHistory({ipAddress, cartItems}) 
+            ipHistory = await createIpHistory({ipAddress, lastLogin: null, cartItems}) 
           };
+          const res = await getIpHistory(ipAddress);
           console.log({ message: 'LoadFromCart (guest) Response: ', res });
-          const res = await getIpHistory(ipHistory);
           if (res && res.cartItems) {
             setCartItems(res.cartItems);
           }

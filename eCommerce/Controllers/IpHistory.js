@@ -10,7 +10,7 @@ export const getIpHistory = async (req, res) => {
         }
         res.status(200).json(ipHistory);
     } catch (error) {
-        res.status(500).json({message: "Internal Server Error getting ip history"});
+        res.status(500).json({message: "Internal Server Error getting ip history", error });
     }
 };
 
@@ -22,7 +22,7 @@ export const getIpHistories = async (req, res) => {
         }
         res.status(200).json(ipHistories);
     } catch (error) {
-        res.status(500).json({message: "Internal Server Error getting ip histories"});
+        res.status(500).json({message: "Internal Server Error getting ip histories", error });
     }
 };
 
@@ -34,10 +34,9 @@ export const createIpHistory = async (req, res) => {
             lastLogin: lastLogin,
             cartItems: cartItems || []
         });
-        
         res.status(201).json(ipHistory);
     } catch (error) {
-        res.status(500).json({ message: "Internal Server Error creating ip history" });
+        res.status(500).json({ message: "Internal Server Error creating ip history", error });
     }
 };
 
@@ -45,20 +44,21 @@ export const createIpHistory = async (req, res) => {
 export const updateIpHistory = async (req, res) => {
     try {
         const { ipAddress, lastLogin, cartItems } = req.body;
-        const ipHistory = await IpHistories.update({ipAddress: req.params.ipAddress || ipAddress, lastLogin: lastLogin, cartItems: cartItems}, {
-            where: {ipAddress: req.params.ipAddress}
-        });
-        if (!ipHistory) {
+        const [affectedCount] = await IpHistories.update(
+            { lastLogin: lastLogin, cartItems: cartItems },
+            { where: { ipAddress: req.params.ipAddress } }
+        );
+        if (affectedCount === 0) {
             const newIp = await IpHistories.create({
-                ipAddress: ipAddress,
+                ipAddress: ipAddress || req.params.ipAddress,
                 lastLogin: lastLogin,
                 cartItems: cartItems || []
             });
             return res.status(200).json({message: "Ip History not found, New IP created instead.", newIp});
         }
-        res.status(200).json({message: "IPHistory Updated successfully. ", ipHistory});
+        res.status(200).json({message: "IPHistory Updated successfully.", affectedCount});
     } catch (error) {
-        res.status(500).json({message: "Internal Server Error updating ip history"});
+        res.status(500).json({message: "Internal Server Error updating ip history", error });
     }
 };
 
@@ -72,6 +72,6 @@ export const deleteIpHistory = async (req, res) => {
         }
         res.status(200).json(ipHistory);
     } catch (error) {
-        res.status(500).json({message: "Internal Server Error deleting ip history"});
+        res.status(500).json({message: "Internal Server Error deleting ip history", error });
     }
 };

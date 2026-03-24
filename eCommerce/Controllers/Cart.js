@@ -36,7 +36,7 @@ export const updateCartItems = async (req, res) => {
         
         res.status(200).json({ cartItems: finalCartItems });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: error });
     }
 };
 
@@ -79,7 +79,7 @@ export const getCartItems = async (req, res) => {
             res.status(200).json({ message: "Cart items retrieved from IP history", ipHistory });
         }
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: error });
     }
 };
 
@@ -121,6 +121,6 @@ export const deleteCartItem = async (req, res) => {
 
         
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: error });
     }
 };
