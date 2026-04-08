@@ -1,372 +1,163 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Button, Alert, Spinner } from 'react-bootstrap';
+import React, { useState, useEffect, useRef } from 'react';
 
-const SquarePaymentForm = ({ 
-  amount, 
-  onPaymentSuccess, 
-  onPaymentError, 
-  loading = false,
-  disabled = false 
+const SquarePaymentForm = ({
+  applicationId = 'sandbox-sq0idb-yQknbhfzkE_oLYjaXeNKPQ',
+  locationId = 'LWA9Q5KARMH1J',
+
+  amount = 100,          // cents → change this as needed
+  currency = 'USD',
+
+  onTokenReceived = null,
 }) => {
-  const [payments, setPayments] = useState(null);
-  const [card, setCard] = useState(null);
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [initError, setInitError] = useState('');
-  const [scriptLoading, setScriptLoading] = useState(false);
-  const cardContainerRef = useRef(null);
-  const scriptRef = useRef(null);
-  const initializeRef = useRef(false);
+  const [status, setStatus] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  // Square configuration
-  const SQUARE_APPLICATION_ID = process.env.REACT_APP_SQUARE_APPLICATION_ID;
-  const SQUARE_LOCATION_ID = process.env.REACT_APP_SQUARE_LOCATION_ID;
-  const SQUARE_ENVIRONMENT = process.env.REACT_APP_SQUARE_ENVIRONMENT || 'sandbox';
-
-  const getSquareScriptUrl = () => {
-    // Fixed: Corrected URLs and logic
-    return SQUARE_ENVIRONMENT === 'production' 
-      ? 'https://web.squarecdn.com/v1/square.js'  // Production URL
-      : 'https://sandbox.web.squarecdn.com/v1/square.js'; // Sandbox URL
-  };
+  const containerRef = useRef(null);
+  const cardInstanceRef = useRef(null);
+  const paymentsInstanceRef = useRef(null);
 
   useEffect(() => {
-    // Only initialize if not already done
-    if (!initializeRef.current) {
-      loadSquareScript();
-    }
+    console.log('🔧 Square Sandbox initialized with:', { applicationId, locationId });
 
-    // Cleanup function
-    return () => {
-      // Clean up the card instance
-      if (card) {
-        try {
-          card.destroy();
-        } catch (error) {
-          console.log('Error destroying card instance:', error);
+    let isMounted = true;
+
+    const initializeSquare = async () => {
+      try {
+        setStatus('Loading Square Sandbox...');
+
+        if (!window.Square) {
+          const script = document.createElement('script');
+          script.src = 'https://sandbox.web.squarecdn.com/v1/square.js';
+          script.async = true;
+          document.head.appendChild(script);
+
+          await new Promise((resolve, reject) => {
+            script.onload = resolve;
+            script.onerror = () => reject(new Error('Failed to load Square Sandbox SDK'));
+          });
         }
+
+        const payments = window.Square.payments(applicationId, locationId);
+        paymentsInstanceRef.current = payments;
+
+        const card = await payments.card();
+        if (containerRef.current && isMounted) {
+          await card.attach(containerRef.current);
+          cardInstanceRef.current = card;
+          setStatus('✅ Sandbox card form ready • Test card: 4111 1111 1111 1111');
+        }
+      } catch (error) {
+        console.error('Square init error:', error);
+        setStatus('❌ Failed to load payment form. Check console.');
       }
-      
-      // Clean up script if we created it
-      if (scriptRef.current && scriptRef.current.parentNode) {
-        scriptRef.current.parentNode.removeChild(scriptRef.current);
-        scriptRef.current = null;
-      }
-      
-      // Reset initialization flag on unmount
-      initializeRef.current = false;
     };
-  }, []); // Empty dependency array to run only once
 
-  const loadSquareScript = async () => {
-    try {
-      // Prevent multiple initialization attempts
-      if (initializeRef.current) {
-        return;
-      }
+    initializeSquare();
 
-      setScriptLoading(true);
-      setInitError('');
+    return () => { isMounted = false; };
+  }, [applicationId, locationId]);
 
-      // Validate required environment variables
-      if (!SQUARE_APPLICATION_ID || !SQUARE_LOCATION_ID) {
-        throw new Error('Square Application ID and Location ID must be configured in environment variables');
-      }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!cardInstanceRef.current) return;
 
-      // Check if Square is already loaded
-      if (window?.Square) {
-        await initializeSquarePayments();
-        return;
-      }
-
-      // Check if script already exists in DOM
-      const existingScript = document.querySelector(`script[src="${getSquareScriptUrl()}"]`);
-      if (existingScript) {
-        if (window?.Square) {
-          await initializeSquarePayments();
-        } else {
-          existingScript.addEventListener('load', initializeSquarePayments);
-        }
-        return;
-      }
-
-      // Avoid loading script multiple times
-      if (scriptRef.current) {
-        return;
-      }
-
-      // Create script element
-      const script = document.createElement('script');
-      script.src = getSquareScriptUrl();
-      script.async = true;
-      scriptRef.current = script;
-      
-      script.onload = async () => {
-        try {
-          if (!initializeRef.current) {
-            await initializeSquarePayments();
-          }
-        } catch (error) {
-          console.error('Error initializing Square payments after script load:', error);
-          setInitError(`Failed to initialize Square payments: ${error.message}`);
-          setScriptLoading(false);
-        }
-      };
-      
-      script.onerror = (error) => {
-        console.error('Script loading error:', error);
-        setInitError('Failed to load Square Payment SDK. Please check your internet connection and try again.');
-        setScriptLoading(false);
-        scriptRef.current = null;
-      };
-
-      document.head.appendChild(script);
-    } catch (error) {
-      console.error('Error loading Square script:', error);
-      setInitError(`Failed to initialize Square payments: ${error.message}`);
-      setScriptLoading(false);
-    }
-  };
-
-  const initializeSquarePayments = async () => {
-    try {
-      if (initializeRef.current) {
-        return; // Already initialized
-      }
-
-      // Set flag immediately to prevent race conditions
-      initializeRef.current = true;
-
-      if (!window?.Square) {
-        initializeRef.current = false;
-        throw new Error('Square SDK not loaded');
-      }
-
-      console.log('Initializing Square payments...', {
-        applicationId: SQUARE_APPLICATION_ID?.substring(0, 8) + '...',
-        locationId: SQUARE_LOCATION_ID?.substring(0, 8) + '...',
-        environment: SQUARE_ENVIRONMENT
-      });
-
-      // Initialize Square payments
-      const paymentsInstance = window.Square.payments(
-        SQUARE_APPLICATION_ID,
-        SQUARE_LOCATION_ID
-      );
-
-      if (!paymentsInstance) {
-        initializeRef.current = false;
-        throw new Error('Failed to create Square payments instance');
-      }
-
-      setPayments(paymentsInstance);
-
-      // Create and attach card payment method with only supported CSS properties
-      const cardInstance = await paymentsInstance.card({
-        style: {
-          '.input-container.is-focus': {
-            borderColor: '#3b82f6'
-          },
-          '.input-container.is-error': {
-            borderColor: '#ef4444'
-          },
-          '.message-text': {
-            color: '#ef4444'
-          },
-          '.message-icon': {
-            color: '#ef4444'
-          },
-          'input': {
-            color: '#374151'
-          }
-        }
-      });
-
-      if (!cardInstance) {
-        initializeRef.current = false;
-        throw new Error('Failed to create card instance');
-      }
-
-      // Attach the card to the container
-      if (cardContainerRef.current) {
-        // Check if already attached to prevent duplicate forms
-        const existingForm = cardContainerRef.current.querySelector('.sq-input');
-        if (existingForm) {
-          console.log('Square form already attached, skipping...');
-          setCard(cardInstance);
-          setIsInitialized(true);
-          setScriptLoading(false);
-          return;
-        }
-
-        await cardInstance.attach(cardContainerRef.current);
-        setCard(cardInstance);
-        setIsInitialized(true);
-        setScriptLoading(false);
-        console.log('Square payments initialized successfully');
-      } else {
-        initializeRef.current = false;
-        throw new Error('Card container not found');
-      }
-
-    } catch (error) {
-      console.error('Error initializing Square payments:', error);
-      initializeRef.current = false;
-      setInitError(`Failed to initialize Square payments: ${error.message}`);
-      setScriptLoading(false);
-    }
-  };
-
-  const handlePayment = async () => {
-    if (!card) {
-      onPaymentError('Payment form not ready. Please try again.');
-      return;
-    }
-
-    if (!isInitialized) {
-      onPaymentError('Payment system is still loading. Please wait and try again.');
-      return;
-    }
+    setIsProcessing(true);
+    setStatus('Processing payment in sandbox...');
 
     try {
-      console.log('Starting payment tokenization...');
-      
-      // Tokenize the card
-      const result = await card.tokenize();
-      
-      console.log('Tokenization result:', result);
-      
+      const result = await cardInstanceRef.current.tokenize();
+
       if (result.status === 'OK') {
-        console.log('Payment tokenization successful');
-        // Pass the token to parent component
-        onPaymentSuccess({
-          token: result.token,
-          details: result.details
-        });
+        console.log('✅ Square token received:', result.token);
+        setStatus('✅ Token received successfully!');
+
+        if (onTokenReceived) {
+          onTokenReceived({
+            token: result.token,
+            amount,
+            currency,
+            idempotencyKey: crypto.randomUUID?.() || `sq-${Date.now()}`,
+            environment: 'sandbox',
+          });
+        }
       } else {
-        // Handle tokenization errors
-        console.error('Tokenization errors:', result.errors);
-        const errorMessage = result.errors?.[0]?.message || 'Payment failed. Please check your card details and try again.';
-        onPaymentError(errorMessage);
+        setStatus(`❌ Tokenization failed: ${result.errors?.[0]?.message || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Square payment error:', error);
-      onPaymentError('An error occurred while processing your payment. Please try again.');
+      console.error('Tokenization error:', error);
+      setStatus('❌ An error occurred during tokenization');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  // Show environment info for debugging (remove in production)
-  const debugInfo = process.env.NODE_ENV === 'development' ? (
-    <div className="mb-2">
-      <small className="text-muted">
-        Environment: {SQUARE_ENVIRONMENT} | 
-        App ID: {SQUARE_APPLICATION_ID ? '✓' : '✗'} | 
-        Location ID: {SQUARE_LOCATION_ID ? '✓' : '✗'}
-      </small>
-    </div>
-  ) : null;
-
-  if (initError) {
-    return (
-      <div>
-        {debugInfo}
-        <Alert variant="danger">
-          <strong>Payment Error:</strong> {initError}
-          <br />
-          <small>Please refresh the page and try again, or contact support if the problem persists.</small>
-          <div className="mt-2">
-            <Button 
-              variant="outline-danger" 
-              size="sm" 
-              onClick={() => {
-                setInitError('');
-                setIsInitialized(false);
-                initializeRef.current = false;
-                loadSquareScript();
-              }}
-            >
-              Retry
-            </Button>
-          </div>
-        </Alert>
-      </div>
-    );
-  }
+  const displayAmount = (amount / 100).toFixed(2);
 
   return (
-    <div className="square-payment-form">
-      {debugInfo}
-      
-      <div className="mb-3">
-        <label className="form-label">Card Information</label>
-        <div 
-          ref={cardContainerRef}
-          id="square-card-container"
+    <form
+      onSubmit={handleSubmit}
+      style={{
+        maxWidth: '420px',
+        margin: '40px auto',
+        padding: '24px',
+        border: '1px solid #ddd',
+        borderRadius: '8px',
+        backgroundColor: '#fff',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        fontFamily: 'system-ui, sans-serif',
+      }}
+    >
+      <h2 style={{ marginTop: 0, textAlign: 'center', color: '#00a65a' }}>
+        Pay ${displayAmount} (Sandbox Mode)
+      </h2>
+
+      <div
+        ref={containerRef}
+        style={{
+          border: '1px solid #ccc',
+          borderRadius: '4px',
+          padding: '12px',
+          minHeight: '160px',
+          marginBottom: '24px',
+          backgroundColor: '#fafafa',
+        }}
+      />
+
+      <button
+        type="submit"
+        disabled={isProcessing}
+        style={{
+          width: '100%',
+          padding: '14px',
+          backgroundColor: isProcessing ? '#666' : '#00a65a',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '4px',
+          fontSize: '16px',
+          fontWeight: 600,
+          cursor: isProcessing ? 'not-allowed' : 'pointer',
+        }}
+      >
+        {isProcessing ? 'Processing in Sandbox...' : `Pay $${displayAmount} Securely`}
+      </button>
+
+      {status && (
+        <p
           style={{
-            minHeight: '120px',
-            padding: '12px',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            backgroundColor: '#ffffff'
+            marginTop: '16px',
+            textAlign: 'center',
+            fontSize: '14px',
+            color: status.includes('✅') ? '#00a65a' : '#d32f2f',
           }}
         >
-          {(scriptLoading || !isInitialized) && !initError && (
-            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '96px' }}>
-              <Spinner animation="border" size="sm" className="me-2" />
-              <span className="text-muted">
-                {scriptLoading ? 'Loading payment form...' : 'Initializing payment form...'}
-              </span>
-            </div>
-          )}
-        </div>
-        {isInitialized && (
-          <small className="form-text text-muted">
-            <i className="fas fa-shield-alt me-1"></i>
-            Secure payment processing powered by Square
-          </small>
-        )}
-      </div>
+          {status}
+        </p>
+      )}
 
-      <Button
-        variant="primary"
-        size="lg"
-        className="w-100"
-        onClick={handlePayment}
-        disabled={!isInitialized || loading || disabled || scriptLoading}
-      >
-        {loading ? (
-          <>
-            <Spinner
-              as="span"
-              animation="border"
-              size="sm"
-              role="status"
-              className="me-2"
-            />
-            Processing Payment...
-          </>
-        ) : scriptLoading ? (
-          <>
-            <Spinner
-              as="span"
-              animation="border"
-              size="sm"
-              role="status"
-              className="me-2"
-            />
-            Loading...
-          </>
-        ) : (
-          `Pay $${amount.toFixed(2)}`
-        )}
-      </Button>
-
-      <div className="mt-2 text-center">
-        <small className="text-muted">
-          <i className="fas fa-lock me-1"></i>
-          Your payment information is secure and encrypted
-        </small>
-      </div>
-    </div>
+      <p style={{ fontSize: '12px', textAlign: 'center', color: '#777', marginTop: '20px' }}>
+        Secured by Square • SANDBOX MODE
+      </p>
+    </form>
   );
 };
 
