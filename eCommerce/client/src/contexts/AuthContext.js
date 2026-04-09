@@ -1,4 +1,4 @@
-                                                                                                                                                                                                                           import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useCart } from './CartContext';
 import axios from '../api/axios';
 import {
@@ -36,7 +36,6 @@ export const AuthProvider = ({ children }) => {
   const [username, setUsername] = useState(null);
   const [userId, setUserId] = useState(null);
   const { loadCartFromDatabase, cartItems } = useCart();
-
 
   // On mount, check if the user is still authenticated by hitting verify-token.
   // The browser sends the httpOnly access_token cookie automatically — we never

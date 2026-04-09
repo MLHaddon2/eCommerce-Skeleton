@@ -286,12 +286,12 @@ export const CartProvider = ({ children }) => {
 
     try {
       console.log('Syncing cart with database:', { userId, ipAddress, cartItemsToSync });
-      if (userId === '0000') {
+      if (userId !== '0000') {
         await axios.post(`/api/cart/update/${userId}/${ipAddress}`, {
           cartItems: cartItemsToSync,
         });
       }
-      if (userId !== '0000') {
+      if (userId === '0000') {
         await axios.post(`/api/cart/update/${ipAddress}`, {
           cartItems: cartItemsToSync,
         });

@@ -61,7 +61,7 @@ function Login() {
       }
 
       await login({ token: accessToken, user: userRes });
-      navigate(userRes.username === 'admin' ? '/AdminPanel' : '/', { replace: true });
+      navigate(userRes.username === 'Admin' ? '/AdminPanel' : '/', { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || 'An error occurred during login.');
     }
