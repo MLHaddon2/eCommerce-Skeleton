@@ -10,6 +10,7 @@
 
 // TODO: There may be some TODO's in the adminPanel. Make sure to recreate the admin account and check it out. For example there may still be a bug with the other users being able to access it.
 
+// TODO: Fix the runtime error with the cart request for logged in customers.
 
 // TODO: IP History management doesn't populate dom with an iphistory if there isnt one present in the database. Fixed...
 // DONE: IP History management now creates a new IP history record if one doesn't exist for the incoming IP address, and returns the new record in the response. This ensures that even first-time visitors have an IP history created for them, allowing for cart persistence and tracking from their very first interaction. Additionally, the update logic has been adjusted to return the updated IP history record after an update operation, providing immediate feedback on the changes made.
