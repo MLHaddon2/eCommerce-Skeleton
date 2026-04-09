@@ -329,29 +329,29 @@ const mergeCartItems = (existingItems = [], newItems = []) => {
   return merged;
 };
 
-const persistIpHistory = async (userId, ipAddress, finalCartItems) => {
-  let ipRecord = await IpHistory.findOne({ where: { ipAddress } });
+// const persistIpHistory = async (userId, ipAddress, finalCartItems) => {
+//   let ipRecord = await IpHistory.findOne({ where: { ipAddress } });
 
-  if (!ipRecord && userId !== '0000') {
-    ipRecord = await IpHistory.findOne({ where: { userId } });
-  }
+//   if (!ipRecord && userId !== '0000') {
+//     ipRecord = await IpHistory.findOne({ where: { userId } });
+//   }
 
-  if (ipRecord) {
-    await ipRecord.update({
-      ipAddress,
-      userId: userId !== '0000' ? userId : null,
-      lastLogin: new Date().toUTCString(),
-      cartItems: finalCartItems
-    });
-  } else {
-    await IpHistory.create({
-      ipAddress,
-      userId: userId !== '0000' ? userId : null,
-      lastLogin: new Date().toUTCString(),
-      cartItems: finalCartItems
-    });
-  }
-};
+//   if (ipRecord) {
+//     await ipRecord.update({
+//       ipAddress,
+//       userId: userId !== '0000' ? userId : '0000',
+//       lastLogin: new Date().toUTCString(),
+//       cartItems: finalCartItems
+//     });
+//   } else {
+//     await IpHistory.create({
+//       ipAddress,
+//       userId: userId !== '0000' ? userId : '0000',
+//       lastLogin: new Date().toUTCString(),
+//       cartItems: finalCartItems
+//     });
+//   }
+// };
 
 export const updateCartItems = async (req, res) => {
   try {
@@ -369,11 +369,13 @@ export const updateCartItems = async (req, res) => {
     } else {
       const ipRecord = await IpHistory.findOne({ where: { ipAddress } });
       if (ipRecord) {
-        await IpHistory.update({ cartItems: finalCartItems }, { where: { ipAddress } });
+        await IpHistory.update({
+          ipAddress,
+          lastLogin: new Date().toUTCString(),
+          cartItems: finalCartItems
+        }, { where: { ipAddress } });
       }
     }
-
-    await persistIpHistory(userId, ipAddress, finalCartItems);
 
     return res.status(200).json({ cartItems: finalCartItems });
 
@@ -397,6 +399,7 @@ export const getCartItems = async (req, res) => {
     if (!ipHistory && userId === '0000') {
       await IpHistory.create({
         ipAddress,
+        userId,
         lastLogin: null,
         cartItems: []
       });
@@ -410,7 +413,7 @@ export const getCartItems = async (req, res) => {
           if (!customer) return res.status(404).json({ message: 'Customer not found' });
 
           const newIpReturn = await IpHistory.update(
-            { ipAddress, lastLogin: new Date().toUTCString(), cartItems: customer.cartItems || [] },
+            { ipAddress, userId, lastLogin: new Date().toUTCString(), cartItems: customer.cartItems || [] },
             { where: { ipAddress } }
           );
 
@@ -423,7 +426,7 @@ export const getCartItems = async (req, res) => {
       };
       // If user is not authenticated and IP history exists, return cart items from IP history
       await IpHistory.update(
-        { ipAddress, lastLogin: new Date().toUTCString(), cartItems: ipHistory.cartItems || [] },
+        { ipAddress, userId, lastLogin: new Date().toUTCString(), cartItems: ipHistory.cartItems || [] },
         { where: { ipAddress } }
       );
       const newIpHistory = await IpHistory.findOne({ where: { ipAddress } });

@@ -71,6 +71,7 @@ router.delete('/orders/delete/:id', deleteOrder);
 router.get('/cart/get/:ipAddress', getCartItems);
 router.get('/cart/get/:id/:ipAddress', getCartItems);
 router.post('/cart/update/:id/:ipAddress', updateCartItems);
+router.post('/cart/update/:ipAddress', updateCartItems);
 router.delete('/cart/delete/:productId/:ipAddress', deleteCartItem);
 
 // IP History Management

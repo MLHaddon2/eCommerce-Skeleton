@@ -8,6 +8,11 @@ const IpHistories = db.define('iphistories', {
         type: DataTypes.STRING,
         allowNull: false
     },
+    userId: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: '0000' // Default to '0000' for guest users
+    },
     lastLogin: {
         type: DataTypes.DATE,
         allowNull: true
