@@ -4,12 +4,6 @@
 // DONE: Browse page now fetches products on mount when they are not already loaded and renders a loading state.
 
 
-// TODO: Fix the issue with the cart loading forms twice. Its seems to be related to the UseEffect running twice. This issue has been resolved for square payments, though the credit card form still needs fixing
-
-// TODO: Implement all the missing JPGs for the items. OR wait to have actual items after deployment.
-
-// TODO: There may be some TODO's in the adminPanel. Make sure to recreate the admin account and check it out. For example there may still be a bug with the other users being able to access it.
-
 // TODO: Fix the runtime error with the cart request for logged in customers.
 // DONE: The cart update route has been updated to handle the case where the id parameter is not provided. If the id parameter is not provided, the route will use the ipAddress to identify the user instead. This allows for cart updates to work for non-authenticated users as well. Additionally, logging has been added to help debug any issues with cart updates.
 
@@ -19,4 +13,10 @@
 //TODO: Fix the cart update with a non-authenticated user. The cart is getting a 500 error with a message which states "error": "WHERE parameter \"id\" has invalid \"undefined\" value". This is because the cart update route is expecting an id parameter, but it is not being passed in the request. The cart update route should be updated to handle the case where the id parameter is not provided, and it should use the ipAddress to identify the user instead.
 // DONE: The cart update route has been updated to handle the case where the id parameter is not provided. If the id parameter is not provided, the route will use the ipAddress to identify the user instead. This allows for cart updates to work for non-authenticated users as well.
 
-// TODO: (For after MVP is achieved) Implement the review system so that customers may leave reviews for their products. (Noted that the admin panel is already built to accommodate that.)
+//! TODO: (For after MVP is achieved) Implement the review system so that customers may leave reviews for their products. (Noted that the admin panel is already built to accommodate that.)
+
+//! TODO: There may be some TODO's in the adminPanel. Make sure to recreate the admin account and check it out. For example there may still be a bug with the other users being able to access it.
+
+//! TODO: Fix the issue with the cart loading forms twice. Its seems to be related to the UseEffect running twice. This issue has been resolved for square payments, though the credit card form still needs fixing
+
+//! TODO: Implement all the missing JPGs for the items. OR wait to have actual items after deployment.
