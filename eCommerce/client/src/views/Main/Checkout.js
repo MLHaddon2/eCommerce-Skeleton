@@ -3,10 +3,11 @@ import { Container, Row, Col, Form, Button, Alert } from 'react-bootstrap';
 import { PayPalButtons, PayPalScriptProvider } from '@paypal/react-paypal-js';
 import { useCart } from '../../contexts/CartContext';
 import { useNavigate } from 'react-router-dom';
-import axios from '../../api/axios'; // FIXED: was importing from 'axios' directly, bypassing interceptors
+import axios from '../../api/axios'; 
 import SquarePaymentForm from '../../components/SquarePaymentForm.js';
 // import CreditCardForm from '../../components/CreditCardForm.js';
 import { useSavedCards } from '../../contexts/SavedCardsContext.js';
+import useGeoLocation from '../../Hooks/locationHook.js'; 
 
 // FIXED — CRITICAL (security):
 // 1. Raw card data (cardNumber, expiryDate, cvv) is NO LONGER sent to the backend.
@@ -73,6 +74,18 @@ function Checkout() {
 
   const { savedCards, defaultCard, fetchSavedCards, addSavedCard } = useSavedCards();
 
+  const [locationData, setLocationData] = useState(null);
+  
+  // const geoLocation = useGeoLocation();
+  const location = useGeoLocation();
+
+  useEffect(() => {
+      if (location) {
+          setLocationData(location);
+      };
+      console.log("Location data updated:", location);
+  }, [location]);
+
   // Load saved cards when checkout mounts (context deduplicates calls)
   useEffect(() => {
     fetchSavedCards();
@@ -88,7 +101,7 @@ function Checkout() {
 
   const calculateSalesTax = () => {
     const subtotal = getCartTotal();
-    const taxRate = STATE_TAX_RATES[shippingState] || 0;
+    const taxRate = STATE_TAX_RATES[location] || 0;
     return subtotal * taxRate;
   };
 
@@ -383,24 +396,9 @@ function Checkout() {
                 </div>
               ))}
               <hr />
-              <div className="mb-3">
-                <Form.Group>
-                  <Form.Label>Shipping State</Form.Label>
-                  <Form.Select
-                    value={shippingState}
-                    onChange={(e) => setShippingState(e.target.value)}
-                    required
-                  >
-                    <option value="">Select State</option>
-                    {Object.keys(STATE_TAX_RATES)
-                      .sort()
-                      .map((state) => (
-                        <option key={state} value={state}>
-                          {state}
-                        </option>
-                      ))}
-                  </Form.Select>
-                </Form.Group>
+              <div className="d-flex justify-content-between mb-2">
+                <span>Shipping State</span>
+                <span>{location ? location : 'Loading'}</span>
               </div>
               <div className="d-flex justify-content-between mb-2">
                 <span>Subtotal:</span>
@@ -408,7 +406,7 @@ function Checkout() {
               </div>
               <div className="d-flex justify-content-between mb-2">
                 <span>
-                  Sales Tax ({((STATE_TAX_RATES[shippingState] || 0) * 100).toFixed(2)}%):
+                  Sales Tax ({((STATE_TAX_RATES[location] || 0) * 100).toFixed(2)}%):
                 </span>
                 <span>${calculateSalesTax().toFixed(2)}</span>
               </div>
@@ -522,7 +520,7 @@ function Checkout() {
 
             {paymentMethod === 'paypal' && (
               <div>
-                {shippingState ? (
+                {location ? (
                   <PayPalScriptProvider
                     options={{
                       'client-id': process.env.REACT_APP_PAYPAL_CLIENT_ID,
@@ -548,7 +546,7 @@ function Checkout() {
                 <div id="afterpay-widget" className="mb-3"></div>
                 <Button
                   onClick={handleAfterpayPayment}
-                  disabled={loading || !shippingState}
+                  disabled={loading || !location}
                   variant="primary"
                   size="lg"
                   className="w-100"
@@ -557,7 +555,7 @@ function Checkout() {
                     ? 'Processing...'
                     : `Pay $${calculateFinalTotal().toFixed(2)} with Afterpay`}
                 </Button>
-                {!shippingState && (
+                {!location && (
                   <small className="text-muted d-block mt-2">
                     Please select a shipping state to continue
                   </small>
@@ -570,7 +568,7 @@ function Checkout() {
                 <div id="klarna-payments-container" className="mb-3"></div>
                 <Button
                   onClick={handleKlarnaPayment}
-                  disabled={loading || !shippingState}
+                  disabled={loading || !location}
                   variant="primary"
                   size="lg"
                   className="w-100"
@@ -579,7 +577,7 @@ function Checkout() {
                     ? 'Processing...'
                     : `Pay $${calculateFinalTotal().toFixed(2)} with Klarna`}
                 </Button>
-                {!shippingState && (
+                {!location && (
                   <small className="text-muted d-block mt-2">
                     Please select a shipping state to continue
                   </small>
