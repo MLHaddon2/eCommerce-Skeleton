@@ -53,11 +53,13 @@ export const AuthProvider = ({ children }) => {
           setIsAuthenticated(true);
           setUsername(user.username);
           setUserId(user.id);
+          setCookie(COOKIE_KEYS.IS_AUTHENTICATED, isAuthenticated.toString());
           setCookie(COOKIE_KEYS.USERNAME, user.username);
           setCookie(COOKIE_KEYS.USER_ID, String(user.id));
           await loadCartFromDatabase(user.id);
         }
-
+        const cookieCheck = getCookie(COOKIE_KEYS.IS_AUTHENTICATED);
+        console.log("isAuthenticated", cookieCheck);
         handleAdminCheck();
 
       } catch (error) {
@@ -69,7 +71,8 @@ export const AuthProvider = ({ children }) => {
     };
 
     checkAuthStatus();
-  }, []);
+  }, [isAuthenticated]);
+
 
   const handleAdminCheck = async () => {
   if (getCookie(COOKIE_KEYS.USERNAME) === 'Admin') {

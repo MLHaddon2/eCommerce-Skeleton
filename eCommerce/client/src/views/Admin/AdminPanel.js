@@ -10,7 +10,6 @@ import { getCookie, COOKIE_KEYS } from '../../Utils/cookieUtils.js';
 
 const AdminPanel = () => {
 
-  const { isAuthenticated } = useAuth();
   const [authError, setAuthError] = useState(null);
   const [authCheckComplete, setAuthCheckComplete] = useState(false);
   const [showProductModal, setShowProductModal] = useState(false);
@@ -152,11 +151,18 @@ const AdminPanel = () => {
     console.log('Exporting transaction:', exportData);
   };
 
+
+  // TODO: isAuthenticated isn't being set to true and saved as a cookie.
   // --- AUTH CHECK (recursive / polling) ---
   const pollForAdmin = async (attempt = 0) => {
     try {
+      // Set the username to cookie for username
       const username = await getCookie(COOKIE_KEYS.USERNAME);
       const isAdmin = username === 'Admin';
+
+      // Set the isAuthenticated boolean to the boolean cookie isAuthenticated
+      const isAuthenticated = await getCookie(COOKIE_KEYS.IS_AUTHENTICATED);
+      console.log(`Cookie Values - Username: ${username}, IsAuthenticated: ${isAuthenticated}, IsAdmin: ${isAdmin}`);
 
       // 1. USERNAME MUST EXIST
       if (!username) {

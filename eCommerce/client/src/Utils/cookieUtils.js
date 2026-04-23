@@ -22,6 +22,7 @@ export const COOKIE_KEYS = {
     ACCESS_TOKEN:  'access_token',  // httpOnly — set by server, do not read in JS
     REFRESH_TOKEN: 'refresh_token', // httpOnly — set by server, do not read in JS
     USERNAME:      'username',      // JS-readable — safe to store, not sensitive
+    IS_AUTHENTICATED: 'isAuthenticated', // JS-readable — for auth status
 };
 
 /**
@@ -63,6 +64,7 @@ export const deleteCookie = (name) => {
  * when it receives the logout request — the client cannot clear them directly.
  */
 export const clearAuthCookies = () => {
+    deleteCookie(COOKIE_KEYS.ISAUTHENTICATED);
     deleteCookie(COOKIE_KEYS.USERNAME);
     deleteCookie(COOKIE_KEYS.USER_ID);
 };
