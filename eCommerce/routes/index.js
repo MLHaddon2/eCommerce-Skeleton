@@ -10,7 +10,7 @@ import cartRoutes from './cartRoutes.js';
 import ipHistoryRoutes from './ipHistoryRoutes.js';
 
 import { initializeSquareClient, getPayment, updatePayment, cancelPayment, completePayment, createPayment, refundPayment, listPayments } from '../middleware/SquareAPI.js';
-import { createKlarnaSession, authorizeKlarnaPayment, captureKlarnaOrder, refundKlarnaOrder } from '../../Backups/KlarnaAPI.js';
+// import { createKlarnaSession, authorizeKlarnaPayment, captureKlarnaOrder, refundKlarnaOrder } from '../../Backups/KlarnaAPI.js';
 import { refreshToken } from '../Controllers/RefreshToken.js';
 import { verifyToken } from '../middleware/VerifyToken.js';
 import { getSavedCards, addSavedCard, deleteSavedCard, setDefaultCard } from '../Controllers/SavedCards.js';
