@@ -152,7 +152,7 @@ const AdminPanel = () => {
   };
 
 
-  // TODO: isAuthenticated isn't being set to true and saved as a cookie.
+ 
   // --- AUTH CHECK (recursive / polling) ---
   const pollForAdmin = async (attempt = 0) => {
     try {

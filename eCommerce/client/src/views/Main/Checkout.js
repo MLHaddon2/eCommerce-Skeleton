@@ -5,7 +5,7 @@ import { useCart } from '../../contexts/CartContext';
 import { useNavigate } from 'react-router-dom';
 import axios from '../../api/axios'; 
 import SquarePaymentForm from '../../components/SquarePaymentForm.js';
-// import CreditCardForm from '../../components/CreditCardForm.js';
+import KlarnaPaymentForm from '../../components/KlarnaPaymentForm.js';
 import { useSavedCards } from '../../contexts/SavedCardsContext.js';
 import useGeoLocation from '../../Hooks/locationHook.js'; 
 
@@ -39,8 +39,6 @@ const API_ENDPOINTS = {
   // Server receives a processor token + item IDs/quantities only — never raw card data
   // creditCard: '/api/payments/credit-card',
   paypal: '/api/payments/paypal/capture',
-  afterpay: '/api/payments/afterpay',
-  klarna: '/api/payments/klarna',
   square: '/api/initialize',
 };
 
@@ -129,55 +127,6 @@ function Checkout() {
    * CreditCardForm is responsible for tokenizing via the processor's client SDK
    * before calling this handler.
    */
-  // const handleCreditCardSubmit = async (formData, saveCard = false) => {
-  //   setLoading(true);
-  //   setError('');
-
-  //   try {
-  //     let paymentData;
-
-  //     if (useNewCard) {
-  //       // formData.token is the processor token — raw card fields must NOT be present
-  //       if (!formData.token) {
-  //         setError('Payment tokenization failed. Please try again.');
-  //         setLoading(false);
-  //         return;
-  //       }
-  //       paymentData = {
-  //         processorToken: formData.token,
-  //         saveCard,
-  //         shippingState,
-  //         items: buildCartPayload(), // IDs + quantities only — server calculates price
-  //       };
-  //     } else {
-  //       paymentData = {
-  //         savedCardId: selectedSavedCard,
-  //         shippingState,
-  //         items: buildCartPayload(),
-  //       };
-  //     }
-
-  //     const response = await axios.post(API_ENDPOINTS.creditCard, paymentData);
-
-  //     if (response.data.success) {
-  //       // If the user ticked "save card" and the server vaulted it, persist
-  //       // the card reference via the context so the UI updates immediately.
-  //       // The server returns { vaultedCard: { processorCardId, brand, last4,
-  //       //   expMonth, expYear } } when saveCard was true.
-  //       if (useNewCard && saveCard && response.data.vaultedCard) {
-  //         await addSavedCard(response.data.vaultedCard);
-  //       }
-  //       setSuccess(true);
-  //     } else {
-  //       setError(response.data.message || 'Payment failed. Please try again.');
-  //     }
-  //   } catch (err) {
-  //     console.error('Error processing payment:', err);
-  //     setError('An error occurred. Please try again.');
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   const handleSquarePaymentSuccess = async (paymentResult) => {
     setLoading(true);
@@ -265,82 +214,6 @@ function Checkout() {
     }
   };
 
-  const handleAfterpayPayment = async () => {
-    setLoading(true);
-    setError('');
-
-    try {
-      const response = await axios.post(API_ENDPOINTS.afterpay, {
-        currency: 'USD',
-        shippingState,
-        items: buildCartPayload(), // FIXED: IDs + quantities only
-      });
-
-      if (response.data.token) {
-        // FIXED: removed setAfterpayToken — token state was set but never used
-        if (window.AfterPay) {
-          window.AfterPay.redirect({
-            token: response.data.token,
-            onComplete: (event) => {
-              if (event.status === 'SUCCESS') {
-                setSuccess(true);
-              } else {
-                setError('Afterpay payment failed.');
-              }
-              setLoading(false);
-            },
-          });
-        } else {
-          setError('Afterpay is not available. Please try another payment method.');
-          setLoading(false);
-        }
-      }
-    } catch (err) {
-      console.error('Afterpay error:', err);
-      setError('Could not initialize Afterpay.');
-      setLoading(false);
-    }
-  };
-
-  const handleKlarnaPayment = async () => {
-    setLoading(true);
-    setError('');
-
-    try {
-      const response = await axios.post(API_ENDPOINTS.klarna, {
-        currency: 'USD',
-        shippingState,
-        items: buildCartPayload(), // FIXED: IDs + quantities only
-      });
-
-      if (response.data.client_token) {
-        // FIXED: removed setKlarnaToken — token state was set but never used
-        if (window.Klarna && window.Klarna.Payments) {
-          window.Klarna.Payments.load(
-            {
-              container: '#klarna-payments-container',
-              payment_method_category: 'pay_later',
-              instance_id: 'klarna-payments-instance',
-            },
-            (res) => {
-              setLoading(false);
-              if (!res.show_form) {
-                setError('Could not load Klarna payment form.');
-              }
-            }
-          );
-        } else {
-          setError('Klarna is not available. Please try another payment method.');
-          setLoading(false);
-        }
-      }
-    } catch (err) {
-      console.error('Klarna error:', err);
-      setError('Could not initialize Klarna.');
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     setError('');
   }, [paymentMethod]);
@@ -420,7 +293,7 @@ function Checkout() {
           <Col md={6}>
             <h4>Payment Method</h4>
             <Form className="mb-4">
-              {['square', 'paypal', 'afterpay', 'klarna'].map((method) => (
+              {['square', 'paypal'].map((method) => (
                 <Form.Check
                   key={method}
                   type="radio"
@@ -437,69 +310,6 @@ function Checkout() {
                 />
               ))}
             </Form>
-
-            {/* {paymentMethod === 'creditCard' && (
-              <div>
-                {savedCards.length > 0 && (
-                  <div className="mb-3">
-                    <Form.Check
-                      type="radio"
-                      label="Use a saved card"
-                      checked={!useNewCard}
-                      onChange={() => setUseNewCard(false)}
-                    />
-                    {!useNewCard && (
-                      <Form.Select
-                        className="mt-2"
-                        value={selectedSavedCard}
-                        onChange={(e) => setSelectedSavedCard(e.target.value)}
-                        required={!useNewCard}
-                      >
-                        <option value="">Select a saved card</option>
-                        {savedCards.map((card) => (
-                          <option key={card.id} value={card.id}>
-                            {card.brand} ending in {card.last4}
-                          </option>
-                        ))}
-                      </Form.Select>
-                    )}
-                    <Form.Check
-                      type="radio"
-                      label="Use a new card"
-                      checked={useNewCard}
-                      onChange={() => setUseNewCard(true)}
-                      className="mt-2"
-                    />
-                  </div>
-                )}
-
-                {useNewCard ? (
-                  <CreditCardForm
-                    onSubmit={handleCreditCardSubmit}
-                    loading={loading}
-                    disabled={!shippingState}
-                    amount={calculateFinalTotal()}
-                    showSaveOption={true}
-                  />
-                ) : (
-                  <Button
-                    onClick={() => handleCreditCardSubmit({}, false)}
-                    variant="primary"
-                    size="lg"
-                    className="w-100"
-                    disabled={loading || !shippingState || !selectedSavedCard}
-                  >
-                    {loading ? 'Processing...' : `Pay $${calculateFinalTotal().toFixed(2)}`}
-                  </Button>
-                )}
-
-                {!shippingState && (
-                  <small className="text-muted d-block mt-2">
-                    Please select a shipping state to continue
-                  </small>
-                )}
-              </div>
-            )} */}
 
             {paymentMethod === 'square' && (
               <div>
@@ -537,50 +347,6 @@ function Checkout() {
                   <Alert variant="info">
                     Please select a shipping state to continue with PayPal
                   </Alert>
-                )}
-              </div>
-            )}
-
-            {paymentMethod === 'afterpay' && (
-              <div>
-                <div id="afterpay-widget" className="mb-3"></div>
-                <Button
-                  onClick={handleAfterpayPayment}
-                  disabled={loading || !location}
-                  variant="primary"
-                  size="lg"
-                  className="w-100"
-                >
-                  {loading
-                    ? 'Processing...'
-                    : `Pay $${calculateFinalTotal().toFixed(2)} with Afterpay`}
-                </Button>
-                {!location && (
-                  <small className="text-muted d-block mt-2">
-                    Please select a shipping state to continue
-                  </small>
-                )}
-              </div>
-            )}
-
-            {paymentMethod === 'klarna' && (
-              <div>
-                <div id="klarna-payments-container" className="mb-3"></div>
-                <Button
-                  onClick={handleKlarnaPayment}
-                  disabled={loading || !location}
-                  variant="primary"
-                  size="lg"
-                  className="w-100"
-                >
-                  {loading
-                    ? 'Processing...'
-                    : `Pay $${calculateFinalTotal().toFixed(2)} with Klarna`}
-                </Button>
-                {!location && (
-                  <small className="text-muted d-block mt-2">
-                    Please select a shipping state to continue
-                  </small>
                 )}
               </div>
             )}
