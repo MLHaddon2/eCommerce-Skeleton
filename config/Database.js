@@ -12,7 +12,7 @@ const db = new Sequelize(
     dialect: 'mysql'
   }
 );
-
+ 
 try {
   db.authenticate();
   console.log('Connection has been established successfully.');
