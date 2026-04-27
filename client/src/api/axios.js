@@ -12,7 +12,7 @@ const instance = axios.create({
     withCredentials: true,
 });
 
-export default instance;
+export default instance;  
 
 export const setAuthToken = token => {
     if (token) {
