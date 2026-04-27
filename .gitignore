@@ -7,7 +7,6 @@ build
 coverage
 *.log
 *.lock
-.env*
 .flaskenv*
 !.env.project
 !.env.vault
