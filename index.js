@@ -94,7 +94,24 @@ app.use((req, res, next) => {
   console.log("REQUEST:", req.method, req.originalUrl);
   next();
 });
-app.use(cors(corsOptionsDelegate));
+// app.use(cors(corsOptionsDelegate));
+
+const allowedOrigins = [
+  "http://ec2-18-232-86-51.compute-1.amazonaws.com",
+  "http://localhost:3000"
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(seedCookies);
