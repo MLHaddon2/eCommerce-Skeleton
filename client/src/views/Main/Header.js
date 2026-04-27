@@ -179,7 +179,7 @@ function Header() {
             <Menu size={20} />
           </Navbar.Toggle>
 
-          <Navbar.Collapse id="responsive-navbar-nav" className="d-none d-lg-flex">
+          <Navbar.Collapse id="responsive-navbar-nav">
             <Nav className="me-auto d-flex align-items-center">
               <NavLinks />
             </Nav>
@@ -238,23 +238,32 @@ function Header() {
           <Nav className="flex-column">
             <NavLinks />
           </Nav>
-          {isAuthenticated && (
-            <div className="mt-3 pt-3 border-top">
-              <p className="text-muted small mb-2">Welcome, {username}</p>
-              <Button
-                variant="outline-secondary"
-                size="sm"
-                onClick={() => {
-                  logout();
-                  setShowSidebar(false);
-                }}
-                className="w-100 d-flex align-items-center justify-content-center"
-              >
-                <LogOut size={16} className="me-2" />
-                Logout
-              </Button>
-            </div>
-          )}
+          <div className="mt-3 pt-3 border-top d-flex align-items-center gap-2">
+            <CartPreview />
+            {isAuthenticated ? (
+              <>
+                <span className="text-muted small">Welcome, {username}</span>
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  onClick={() => { logout(); setShowSidebar(false); }}
+                  className="d-flex align-items-center ms-auto"
+                >
+                  <LogOut size={16} className="me-2" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Nav.Link as={Link} to="/login" onClick={() => setShowSidebar(false)} className="d-flex align-items-center">
+                  <User size={16} className="me-2" />Login
+                </Nav.Link>
+                <Nav.Link as={Link} to="/signup" onClick={() => setShowSidebar(false)} className="d-flex align-items-center">
+                  <User size={16} className="me-2" />Signup
+                </Nav.Link>
+              </>
+            )}
+          </div>
         </OffcanvasBody>
       </Offcanvas>
     </>
