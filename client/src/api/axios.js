@@ -8,7 +8,7 @@ import axios from 'axios';
 // set by the server to actually be stored and sent back.
 
 const instance = axios.create({
-    baseURL: 'http://localhost:5001',
+    baseURL: 'ec2-18-232-86-51.compute-1.amazonaws.com',
     withCredentials: true,
 });
 
