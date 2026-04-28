@@ -271,7 +271,7 @@ function Checkout() {
               <hr />
               <div className="d-flex justify-content-between mb-2">
                 <span>Shipping State</span>
-                <span>{locationData ? locationData.region : 'Loading'}</span>
+                <span>{locationData ? location.region || locationData : 'Loading'}</span>
               </div>
               <div className="d-flex justify-content-between mb-2">
                 <span>Subtotal:</span>
@@ -279,7 +279,7 @@ function Checkout() {
               </div>
               <div className="d-flex justify-content-between mb-2">
                 <span>
-                  Sales Tax ({((STATE_TAX_RATES[locationData.region] || 0) * 100).toFixed(2)}%):
+                  Sales Tax ({((STATE_TAX_RATES[location.region || locationData] || 0) * 100).toFixed(2)}%):
                 </span>
                 <span>${calculateSalesTax().toFixed(2)}</span>
               </div>
