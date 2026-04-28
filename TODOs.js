@@ -32,3 +32,5 @@
 // TODO: Check for shipping state using geolocation for paypal, klarna and afterpay to ensure that they are only offered as payment options when the customer is in a state where those payment options are available.
 
 // TODO: Add logistics integration for checkout (Order and transaction confirmations and item shipment integration specifically).
+
+// TODO: Add the ability to change your username and password on the account page. In fact add a tabbed account management page thats modular and scalable in nature.

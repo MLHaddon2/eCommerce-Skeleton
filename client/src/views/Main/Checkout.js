@@ -79,7 +79,7 @@ function Checkout() {
 
   useEffect(() => {
       if (location) {
-          setLocationData(location || location);
+          setLocationData(location?.region || location);
       };
       console.log("Location data updated:", location);
   }, [location]);
@@ -99,7 +99,7 @@ function Checkout() {
 
   const calculateSalesTax = () => {
     const subtotal = getCartTotal();
-    const taxRate = STATE_TAX_RATES[location] || 0;
+    const taxRate = STATE_TAX_RATES[location?.region || location] || 0;
     return subtotal * taxRate;
   };
 
@@ -271,7 +271,7 @@ function Checkout() {
               <hr />
               <div className="d-flex justify-content-between mb-2">
                 <span>Shipping State</span>
-                <span>{locationData ? location.region || locationData : 'Loading'}</span>
+                <span>{locationData ? location?.region || location : 'Loading'}</span>
               </div>
               <div className="d-flex justify-content-between mb-2">
                 <span>Subtotal:</span>
@@ -279,7 +279,7 @@ function Checkout() {
               </div>
               <div className="d-flex justify-content-between mb-2">
                 <span>
-                  Sales Tax ({((STATE_TAX_RATES[location.region || locationData] || 0) * 100).toFixed(2)}%):
+                  Sales Tax ({((STATE_TAX_RATES[location?.region || location] || 0) * 100).toFixed(2)}%):
                 </span>
                 <span>${calculateSalesTax().toFixed(2)}</span>
               </div>
